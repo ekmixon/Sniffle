@@ -100,7 +100,7 @@ def get_mac_from_irk():
         if isinstance(dpkt, AdvaMessage) or \
                 isinstance(dpkt, AdvDirectIndMessage) or \
                 (isinstance(dpkt, AdvExtIndMessage) and dpkt.AdvA is not None):
-            print("Found target MAC: %s" % str_mac(dpkt.AdvA))
+            print(f"Found target MAC: {str_mac(dpkt.AdvA)}")
             return dpkt.AdvA
 
 def print_message(msg):

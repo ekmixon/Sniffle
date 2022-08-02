@@ -17,7 +17,7 @@ def main():
 
     # 5 resets seems to work more reliably than fewer
     print("Sending reset commands...")
-    for i in range(5):
+    for _ in range(5):
         hw.ser.write(b'@@@@@@@@\r\n') # command sync
         hw.cmd_reset()
         sleep(0.02)

@@ -174,9 +174,7 @@ class SniffleHW:
                     self.ser.readline() # eat CRLF
                     continue
 
-                # now read the rest of the packet (if there is anything)
-                word_cnt = data[0]
-                if word_cnt:
+                if word_cnt := data[0]:
                     pkt += self.ser.read((word_cnt - 1) * 4)
 
                 # make sure CRLF is present
@@ -244,19 +242,16 @@ class SniffleHW:
 
     def random_addr(self):
         # generate a random static address, set it
-        addr = [randint(0, 255) for i in range(6)]
+        addr = [randint(0, 255) for _ in range(6)]
         addr[5] |= 0xC0 # make it static
         self.cmd_setaddr(bytes(addr))
 
     # automatically generate sane LLData
     def initiate_conn(self, peerAddr, is_random=True, interval=24, latency=1):
-        llData = []
-
-        # access address
-        llData.extend([randint(0, 255) for i in range(4)])
+        llData = [randint(0, 255) for _ in range(4)]
 
         # initial CRC
-        llData.extend([randint(0, 255) for i in range(3)])
+        llData.extend([randint(0, 255) for _ in range(3)])
 
         # WinSize, WinOffset, Interval, Latency, Timeout
         llData.append(3)
@@ -364,10 +359,10 @@ class DebugMessage:
         self.msg = str(raw_msg, encoding='latin-1')
 
     def __repr__(self):
-        return "%s(msg=%s)" % (type(self).__name__, repr(self.msg))
+        return f"{type(self).__name__}(msg={repr(self.msg)})"
 
     def __str__(self):
-        return "DEBUG: " + self.msg
+        return f"DEBUG: {self.msg}"
 
 class MarkerMessage:
     def __init__(self, raw_msg, dstate):
@@ -396,12 +391,10 @@ class StateMessage:
         dstate.last_state = self.new_state
 
     def __repr__(self):
-        return "%s(new=%s, old=%s)" % (type(self).__name__,
-                str(self.new_state), str(self.last_state))
+        return f"{type(self).__name__}(new={str(self.new_state)}, old={str(self.last_state)})"
 
     def __str__(self):
-        return "TRANSITION: %s from %s" % (str(self.new_state),
-                str(self.last_state))
+        return f"TRANSITION: {str(self.new_state)} from {str(self.last_state)}"
 
 class MeasurementType(Enum):
     INTERVAL = 0
@@ -415,7 +408,7 @@ class MeasurementMessage:
         self.value = raw_msg
 
     def __repr__(self):
-        return "%s(value=%s)" % (type(self).__name__, str(self.value))
+        return f"{type(self).__name__}(value={str(self.value)})"
 
     @staticmethod
     def from_raw(raw_msg):
@@ -455,7 +448,7 @@ class ChanMapMeasurement(MeasurementMessage):
         self.value = raw_val
 
     def __str__(self):
-        return "Measured Channel Map: " + chan_map_to_hex(self.value)
+        return f"Measured Channel Map: {chan_map_to_hex(self.value)}"
 
 class AdvHopMeasurement(MeasurementMessage):
     def __init__(self, raw_val):

@@ -8,9 +8,7 @@ import struct
 from sniffle_hw import BLE_ADV_AA, PacketMessage
 
 def _safe_asciify(c):
-    if 32 <= c <= 126:
-        return chr(c)
-    return " "
+    return chr(c) if 32 <= c <= 126 else " "
 
 def str_mac(mac):
     return ":".join(["%02X" % b for b in reversed(mac)])
@@ -26,7 +24,7 @@ def _str_atype(addr, is_random):
     return atypes[atype]
 
 def str_mac2(mac, is_random):
-    return "%s (%s)" % (str_mac(mac), _str_atype(mac, is_random))
+    return f"{str_mac(mac)} ({_str_atype(mac, is_random)})"
 
 class DPacketMessage(PacketMessage):
     pdutype = "RFU"
@@ -94,19 +92,15 @@ class AdvertMessage(DPacketMessage):
                     ConnectIndMessage,      # 5
                     AdvScanIndMessage,      # 6
                     AdvExtIndMessage]       # 7
-            if pdu_type < len(type_classes):
-                tc = type_classes[pdu_type]
-            else:
-                tc = AdvertMessage
+            tc = type_classes[pdu_type] if pdu_type < len(type_classes) else AdvertMessage
+        elif pdu_type == 3:
+            tc = AuxScanReqMessage
+        elif pdu_type == 5:
+            tc = AuxConnectReqMessage
+        elif pdu_type == 7:
+            tc = AuxAdvIndMessage
         else:
-            if pdu_type == 3:
-                tc = AuxScanReqMessage
-            elif pdu_type == 5:
-                tc = AuxConnectReqMessage
-            elif pdu_type == 7:
-                tc = AuxAdvIndMessage
-            else:
-                tc = AdvertMessage
+            tc = AdvertMessage
 
         return tc(pkt)
 
@@ -120,7 +114,7 @@ class DataMessage(DPacketMessage):
 
     def str_datatype(self):
         dtstr = "LLID: %s\n" % self.pdutype
-        dtstr += "Dir: %s " % ("S->M" if self.data_dir else "M->S")
+        dtstr += f'Dir: {"S->M" if self.data_dir else "M->S"} '
         dtstr += "NESN: %i " % self.NESN
         dtstr += "SN: %i " % self.SN
         dtstr += "MD: %i " % self.MD
@@ -188,7 +182,7 @@ class LlControlMessage(DataMessage):
                 "LL_MIN_USED_CHANNELS_IND"
                 ]
         if self.opcode < len(control_opcodes):
-            return "Opcode: %s" % control_opcodes[self.opcode]
+            return f"Opcode: {control_opcodes[self.opcode]}"
         else:
             return "Opcode: RFU (0x%02X)" % self.opcode
 
@@ -205,7 +199,7 @@ class AdvaMessage(AdvertMessage):
         self.AdvA = self.body[2:8]
 
     def str_adva(self):
-        return "AdvA: %s" % str_mac2(self.AdvA, self.TxAdd)
+        return f"AdvA: {str_mac2(self.AdvA, self.TxAdd)}"
 
     def __str__(self):
         return "\n".join([
@@ -235,7 +229,7 @@ class AdvDirectIndMessage(AdvertMessage):
         self.TargetA = self.body[8:14]
 
     def str_ata(self):
-        return "AdvA: %s TargetA: %s" % (str_mac2(self.AdvA, self.TxAdd), str_mac2(self.TargetA, self.RxAdd))
+        return f"AdvA: {str_mac2(self.AdvA, self.TxAdd)} TargetA: {str_mac2(self.TargetA, self.RxAdd)}"
 
     def __str__(self):
         return "\n".join([
@@ -253,7 +247,7 @@ class ScanReqMessage(AdvertMessage):
         self.AdvA = self.body[8:14]
 
     def str_asa(self):
-        return "ScanA: %s AdvA: %s" % (str_mac2(self.ScanA, self.TxAdd), str_mac2(self.AdvA, self.RxAdd))
+        return f"ScanA: {str_mac2(self.ScanA, self.TxAdd)} AdvA: {str_mac2(self.AdvA, self.RxAdd)}"
 
     def __str__(self):
         return "\n".join([
@@ -295,13 +289,10 @@ class ConnectIndMessage(AdvertMessage):
             descstr = "all channels"
         else:
             has_chan = lambda chm, i: (chm[i // 8] & (1 << (i & 7))) != 0
-            excludes = []
-            for i in range(37):
-                if not has_chan(self.ChM, i):
-                    excludes.append(i)
+            excludes = [i for i in range(37) if not has_chan(self.ChM, i)]
             descstr = "excludes " + ", ".join([str(i) for i in excludes])
         chanstr = "%02X %02X %02X %02X %02X" % tuple(self.ChM)
-        return "Channel Map: %s (%s)" % (chanstr, descstr)
+        return f"Channel Map: {chanstr} ({descstr})"
 
     def __str__(self):
         return "\n".join([
@@ -393,9 +384,9 @@ class AdvExtIndMessage(AdvertMessage):
 
         dispMsgs = []
         if self.AdvA:
-            dispMsgs.append("AdvA: %s" % str_mac2(self.AdvA, self.TxAdd))
+            dispMsgs.append(f"AdvA: {str_mac2(self.AdvA, self.TxAdd)}")
         if self.TargetA:
-            dispMsgs.append("TargetA: %s" % str_mac2(self.TargetA, self.RxAdd))
+            dispMsgs.append(f"TargetA: {str_mac2(self.TargetA, self.RxAdd)}")
         if self.CTEInfo:
             dispMsgs.append("CTEInfo: 0x%02X" % self.CTEInfo)
         if self.AdvDataInfo:
@@ -403,18 +394,15 @@ class AdvExtIndMessage(AdvertMessage):
                 self.AdvDataInfo[0], self.AdvDataInfo[1]))
         if self.SyncInfo:
             # TODO decode this nicely
-            dispMsgs.append("SyncInfo: %s" % repr(self.SyncInfo))
+            dispMsgs.append(f"SyncInfo: {repr(self.SyncInfo)}")
         if self.TxPower:
             dispMsgs.append("TxPower: %d" % self.TxPower)
         if self.ACAD:
             # TODO: pretty print, hex?
-            dispMsgs.append("ACAD: %s" % repr(self.ACAD))
+            dispMsgs.append(f"ACAD: {repr(self.ACAD)}")
 
         dmsg = modemsg + " ".join(dispMsgs)
-        if self.AuxPtr:
-            return "\n".join([str(self.AuxPtr), dmsg])
-        else:
-            return dmsg
+        return "\n".join([str(self.AuxPtr), dmsg]) if self.AuxPtr else dmsg
 
     def __str__(self):
         return "\n".join([

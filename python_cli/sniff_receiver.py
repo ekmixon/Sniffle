@@ -134,7 +134,7 @@ def main():
     hw.mark_and_flush()
 
     global pcwriter
-    if not (args.output is None):
+    if args.output is not None:
         pcwriter = PcapBleWriter(args.output)
 
     while True:

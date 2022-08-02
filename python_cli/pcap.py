@@ -39,11 +39,7 @@ class PcapBleWriter(object):
 
     def __init__(self, output=None):
         # open stream
-        if output is None:
-            self.output = BytesIO()
-        else:
-            self.output = open(output,'wb')
-
+        self.output = BytesIO() if output is None else open(output,'wb')
         # write headers
         self.write_header()
 
